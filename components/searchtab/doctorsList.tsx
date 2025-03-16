@@ -1,12 +1,14 @@
 import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { COLORS, SPACING, SIZES } from "@/config/tabContainer";
+import { useRouter } from "expo-router";
 
 const DoctorList = ({ doctors }) => {
+  const router = useRouter();
   return (
     <View>
       {doctors.map((doctor) => (
-        <View key={doctor.id} style={styles.card}>
+        <TouchableOpacity key={doctor.id} style={styles.card} onPress={() => router.push(`/doctor/${doctor.id}`)}>
           {/* Profile Image */}
           <Image 
             source={{ uri: doctor.image }} 
@@ -16,19 +18,19 @@ const DoctorList = ({ doctors }) => {
           {/* Doctor Details */}
           <View style={styles.detailsContainer}>
             <Text style={styles.name}>{doctor.name}</Text>
-            <Text style={styles.specialization}>{doctor.specialization}</Text>
+            <Text style={styles.specialization}>{doctor.specialty}</Text>
             <View style={styles.row}>
               <FontAwesome name="star" size={SIZES.small} color="gold" />
-              <Text style={styles.rating}>{doctor.rating} ({doctor.reviews} reviews)</Text>
+              <Text style={styles.rating}>{doctor.rating} ({doctor.reviewCount} reviews)</Text>
             </View>
-            <Text style={styles.hospital}>{doctor.hospital}</Text>
+            <Text style={styles.hospital}>{doctor.hospitalName}</Text>
           </View>
 
           {/* Book Button */}
           <TouchableOpacity style={styles.bookButton}>
             <Text style={styles.bookText}>Book Now</Text>
           </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
       ))}
     </View>
   );

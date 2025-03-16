@@ -3,36 +3,9 @@ import SearchBar from "@/components/searchBar";
 import FilterTabs from "@/components/searchtab/filterTabs";
 import DoctorList from "@/components/searchtab/doctorsList";
 import HospitalList from "@/components/searchtab/hospoitalList";
+import { getAllDoctors } from "@/config/SampleData/doctors";
 
-const MOCK_DOCTORS = [
-  {
-    id: "1",
-    name: "Dr. Anirudh Sharma",
-    specialization: "Cardiologist",
-    rating: 4.8,
-    reviews: 120,
-    hospital: "Apollo Hospital, Hyderabad",
-    image: "https://randomuser.me/api/portraits/men/32.jpg",
-  },
-  {
-    id: "2",
-    name: "Dr. Priya Deshmukh",
-    specialization: "Dermatologist",
-    rating: 4.6,
-    reviews: 98,
-    hospital: "Fortis Hospital, Bangalore",
-    image: "https://randomuser.me/api/portraits/women/45.jpg",
-  },
-  {
-    id: "3",
-    name: "Dr. Rakesh Verma",
-    specialization: "Radiologist",
-    rating: 4.7,
-    reviews: 110,
-    hospital: "AIIMS, Delhi",
-    image: "https://randomuser.me/api/portraits/men/56.jpg",
-  },
-];
+const MOCK_DOCTORS = getAllDoctors();
 
 
 const MOCK_HOSPITALS = [
@@ -88,8 +61,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FCFB", // Soft background color
   },
   header: {
-    borderTopColor:'red',
-    borderTopWidth:1,
+    // borderTopColor:'red',
+    // borderTopWidth:1,
     backgroundColor: "#FFFFFF", // White background for separation
     paddingHorizontal: 16,
     paddingBottom: 8,

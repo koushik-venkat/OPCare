@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -19,26 +19,35 @@ import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
 // Get screen width to calculate dialog width
 const screenWidth = Dimensions.get('window').width;
 
-const RescheduleModal = ({
+const AppointmentModal = ({
   appointmentId,
-  doctorName,
+  appointmentDetails,
   onClose,
   onCancel,
   onConfirm,
+  type, // Add type prop with default value
 }) => {
-  const scaleValue = new Animated.Value(0.8);
+  // Use useRef to create a persistent animation value that won't reset on re-renders
+  const scaleValue = useRef(new Animated.Value(0.8)).current;
   const [date, setDate] = useState(new Date());
   const [time, setTime] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  
+  // Store the initial mount status to ensure animation only runs once
+  const hasAnimated = useRef(false);
 
   useEffect(() => {
-    Animated.spring(scaleValue, {
-      toValue: 1,
-      friction: 6,
-      tension: 60,
-      useNativeDriver: true,
-    }).start();
+    // Only run the animation if it hasn't been run before
+    if (!hasAnimated.current) {
+      Animated.spring(scaleValue, {
+        toValue: 1,
+        friction: 6,
+        tension: 60,
+        useNativeDriver: true,
+      }).start();
+      hasAnimated.current = true;
+    }
   }, []);
 
   const handleConfirm = () => {
@@ -48,6 +57,7 @@ const RescheduleModal = ({
     scheduledDateTime.setMinutes(time.getMinutes());
     
     // Call onConfirm with the appointment ID and new date/time
+    // For booking, appointmentId might be null, but we'll pass it anyway
     onConfirm(appointmentId, scheduledDateTime.toISOString());
   };
 
@@ -152,6 +162,15 @@ const RescheduleModal = ({
     };
   }
 
+  // Determine title and button text based on type
+  const modalTitle = type === "booking" ? "Booking Appointment" : "Reschedule Appointment";
+  const confirmButtonText = type === "booking" ? "Confirm Booking" : "Confirm Reschedule";
+  
+  // Determine message text based on type
+  const messageText = type === "booking" 
+    ? `Select a date and time for your appointment with ${appointmentDetails?.doctorName}`
+    : `Select a date and time for your appointment with ${appointmentDetails?.doctorName}`;
+
   return (
     <Modal
       transparent
@@ -210,7 +229,10 @@ const RescheduleModal = ({
 
         <View style={styles.overlay}>
           <Animated.View
-            style={[styles.dialog, { transform: [{ scale: scaleValue }] }]}
+            style={[
+              styles.dialog, 
+              { transform: [{ scale: scaleValue }] }
+            ]}
           >
             <View style={styles.iconContainer}>
               <FontAwesome
@@ -220,11 +242,16 @@ const RescheduleModal = ({
               />
             </View>
 
-            <Text style={styles.title}>Reschedule Appointment</Text>
+            <Text style={styles.title}>{modalTitle}</Text>
 
             <Text style={styles.message}>
-              Select a new date and time for your appointment with{' '}
-              <Text style={styles.highlightText}>Dr. {doctorName}</Text>
+              {messageText.split(appointmentDetails?.doctorName).map((part, i, arr) => 
+                i < arr.length - 1 ? (
+                  <React.Fragment key={i}>
+                    {part}<Text style={styles.highlightText}>{appointmentDetails?.doctorName}</Text>
+                  </React.Fragment>
+                ) : part
+              )}
             </Text>
 
             <View style={styles.inputContainer}>
@@ -251,15 +278,12 @@ const RescheduleModal = ({
 
             <View style={styles.actions}>
               <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm}>
-                <Text style={styles.confirmText}>Confirm Reschedule</Text>
+                <Text style={styles.confirmText}>{confirmButtonText}</Text>
               </TouchableOpacity>
-              
-              <View style={styles.buttonGap} />
               
               <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-
             </View>
           </Animated.View>
         </View>
@@ -268,7 +292,7 @@ const RescheduleModal = ({
   );
 };
 
-export default RescheduleModal;
+export default AppointmentModal;
 
 const styles = StyleSheet.create({
   overlay: {
@@ -279,11 +303,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   dialog: {
-    width: screenWidth * 0.9, // Using 90% of screen width instead of fixed 85%
-    maxWidth: 500, // Adding a max width for tablets/larger screens
+    width: "85%",
     backgroundColor: COLORS.white,
     borderRadius: 15,
-    padding: 24, // Increased padding for a more spacious feel
+    padding: 20,
     alignItems: "center",
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 4 },
@@ -292,42 +315,44 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   iconContainer: {
-    width: 90, // Slightly larger icon container
-    height: 90, 
-    borderRadius: 45,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: COLORS.primary + "15", // Lighter tint
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 18,
+    marginBottom: 15,
   },
   title: {
-    ...FONTS.bold, // Using bold font as defined in your FONTS object
+    ...FONTS.bold,
     fontSize: SIZES.large,
     color: COLORS.primary,
-    marginBottom: 10,
+    marginBottom: 8,
     textAlign: "center",
   },
   message: {
-    ...FONTS.regular, // Using regular font as defined in your FONTS object
+    ...FONTS.regular,
     fontSize: SIZES.medium,
     color: COLORS.grayDark,
     textAlign: "center",
-    marginBottom: 20,
-    lineHeight: 26, // Increased line height for better readability
+    marginBottom: 18,
+    lineHeight: 24,
+    fontWeight: "500",
   },
   highlightText: {
-    ...FONTS.bold, // Using bold font as defined in your FONTS object
+    ...FONTS.bold,
     color: COLORS.primary,
+    fontSize: SIZES.medium,
   },
   inputContainer: {
     width: "100%",
     marginBottom: 16,
   },
   inputLabel: {
-    ...FONTS.regular, // Using regular font as defined in your FONTS object
+    ...FONTS.regular,
     color: COLORS.grayDark,
     marginBottom: 8,
-    fontWeight: "500", // Adding medium weight as a property
+    fontWeight: "500",
   },
   dateInput: {
     flexDirection: "row",
@@ -337,11 +362,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.grayLight || COLORS.border,
     borderRadius: 10,
     paddingHorizontal: 16,
-    paddingVertical: 14, // Taller input fields
+    paddingVertical: 12,
     backgroundColor: COLORS.white,
   },
   dateTimeText: {
-    ...FONTS.regular, // Using regular font as defined in your FONTS object
+    ...FONTS.regular,
     color: COLORS.black,
   },
   actions: {
@@ -349,33 +374,31 @@ const styles = StyleSheet.create({
     width: "100%",
     marginTop: 16,
   },
-  buttonGap: {
-    height: 16, // Adding explicit gap between buttons
-  },
   cancelBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 0, 0.3)', // Transparent red border
-    backgroundColor: 'rgba(255, 0, 0, 0.1)', // Transparent tint of red
-    paddingVertical: 14,
+    borderColor: COLORS.error,
+    backgroundColor: COLORS.error + "10", // Transparent with light tint
+    paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",
   },
   cancelText: {
     ...FONTS.bold,
     fontSize: SIZES.small,
-    color: 'rgb(180, 0, 0)', // Darker red for text
+    color: COLORS.error,
   },
   confirmBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(0, 128, 0, 0.3)', // Transparent green border
-    backgroundColor: 'rgba(0, 128, 0, 0.1)', // Transparent tint of green
-    paddingVertical: 14,
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + "10", // Transparent with light tint
+    paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",
+    marginBottom: 10, // Reduced spacing between buttons to match reference
   },
   confirmText: {
     ...FONTS.bold,
     fontSize: SIZES.small,
-    color: 'rgb(0, 100, 0)', // Darker green for text
+    color: COLORS.primary,
   },
 });

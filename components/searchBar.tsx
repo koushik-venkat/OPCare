@@ -15,8 +15,8 @@ const SearchBar = ({
   onSearch?: (text: string) => void;
   width?: string | number; // Accepts percentage or fixed values
 }) => {
-  const slideAnim = useRef(new Animated.Value(10)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current; // Initialize at 0 instead of 10
+  const opacityAnim = useRef(new Animated.Value(1)).current; // Initialize at 1 for immediate visibility
   const [searchText, setSearchText] = useState(SEARCH_PROMPTS[0]);
   const searchIndex = useRef(0);
   const [isFocused, setIsFocused] = useState(false);
@@ -24,16 +24,17 @@ const SearchBar = ({
   const inputRef = useRef<TextInput | null>(null);
 
   // Handle focus when navigating back to the search tab
-  useFocusEffect(() => {
-    if (autoFocus) {
-      setIsFocused(true);
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
-  });
+  // useFocusEffect(() => {
+  //   if (autoFocus) {
+  //     setIsFocused(true);
+  //     setTimeout(() => inputRef.current?.focus(), 100);
+  //   }
+  // });
 
   useEffect(() => {
     if (isFocused) return;
 
+    // Initial animation setup completed - now we can start cycling
     const interval = setInterval(() => {
       Animated.timing(opacityAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
         searchIndex.current = (searchIndex.current + 1) % SEARCH_PROMPTS.length;

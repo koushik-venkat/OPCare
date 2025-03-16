@@ -1,45 +1,73 @@
-import { useState } from "react";
-import { View, Text, Modal, TouchableOpacity, StyleSheet, TextInput } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, Modal, TouchableOpacity, StyleSheet, Animated } from "react-native";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { COLORS, SIZES } from "@/config/tabContainer";
 
-const STAR_RATINGS = ["3 Star +", "4 Star +", "5 Star"];
+const STAR_RATINGS = ["3", "4", "5"];
 const SORT_OPTIONS = ["Ratings", "Experience", "Nearest"];
 const GENDERS = [
   { label: "Male", icon: "male" },
   { label: "Female", icon: "female" },
 ];
 
-const FilterModal = ({ visible, onClose }) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStar, setSelectedStar] = useState(null);
-  const [selectedGender, setSelectedGender] = useState(null);
-  const [selectedSort, setSelectedSort] = useState(null);
+interface FilterModalProps {
+  visible: boolean;
+  onClose: () => void;
+  // onApply: (filters: { rating: string | null; gender: string | null; sortBy: string | null }) => void;
+}
+
+const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApply }) => {
+  const [selectedStar, setSelectedStar] = useState<string | null>(null);
+  const [selectedGender, setSelectedGender] = useState<string | null>(null);
+  const [selectedSort, setSelectedSort] = useState<string | null>(null);
+  
+  const scaleValue = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(scaleValue, {
+        toValue: 1,
+        friction: 6,
+        tension: 60,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  const handleApply = () => {
+    // onApply({ rating: selectedStar, gender: selectedGender, sortBy: selectedSort });
+    onClose();
+  };
+
+  const resetFilters = () => {
+    setSelectedStar(null);
+    setSelectedGender(null);
+    setSelectedSort(null);
+  };
 
   return (
-    <Modal transparent visible={visible} animationType="slide">
-      <TouchableOpacity style={styles.modalBackground} activeOpacity={1} onPress={onClose}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Filter Options</Text>
+    <Modal transparent visible={visible} animationType="fade" statusBarTranslucent>
+      <View style={styles.overlay}>
+        <Animated.View style={[styles.modalContent, { transform: [{ scale: scaleValue }] }]}>
+          {/* Close Button */}
+          <TouchableOpacity style={styles.closeIcon} onPress={onClose}>
+            <MaterialIcons name="close" size={24} color={COLORS.darkGray} />
+          </TouchableOpacity>
 
-          {/* Search Bar */}
-          <TextInput
-            placeholder="Search..."
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+          <Text style={styles.modalTitle}>Filter Options</Text>
+          <View style={styles.divider} />
 
           {/* Star Rating Filters */}
-          <Text style={styles.sectionTitle}>Star Rating</Text>
+          <Text style={styles.sectionTitle}>Rating</Text>
           <View style={styles.row}>
             {STAR_RATINGS.map((star) => (
               <TouchableOpacity
                 key={star}
                 style={[styles.option, selectedStar === star && styles.selectedOption]}
-                onPress={() => setSelectedStar(star)}
+                onPress={() => setSelectedStar(star === selectedStar ? null : star)}
               >
-                <Text style={[styles.optionText, selectedStar === star && styles.selectedOptionText]}>{star}</Text>
+                <FontAwesome name="star" size={16} color={selectedStar === star ? COLORS.white : COLORS.primary} />
+                <Text style={[styles.optionText, selectedStar === star && styles.selectedOptionText]}>{star}+</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -51,9 +79,9 @@ const FilterModal = ({ visible, onClose }) => {
               <TouchableOpacity
                 key={label}
                 style={[styles.option, selectedGender === label && styles.selectedOption]}
-                onPress={() => setSelectedGender(label)}
+                onPress={() => setSelectedGender(label === selectedGender ? null : label)}
               >
-                <MaterialIcons name={icon} size={20} color={selectedGender === label ? COLORS.white : COLORS.gray} />
+                <MaterialIcons name={icon} size={18} color={selectedGender === label ? COLORS.white : COLORS.primary} />
                 <Text style={[styles.optionText, selectedGender === label && styles.selectedOptionText]}>{label}</Text>
               </TouchableOpacity>
             ))}
@@ -66,19 +94,27 @@ const FilterModal = ({ visible, onClose }) => {
               <TouchableOpacity
                 key={sort}
                 style={[styles.option, selectedSort === sort && styles.selectedOption]}
-                onPress={() => setSelectedSort(sort)}
+                onPress={() => setSelectedSort(sort === selectedSort ? null : sort)}
               >
                 <Text style={[styles.optionText, selectedSort === sort && styles.selectedOptionText]}>{sort}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* Apply Button */}
-          <TouchableOpacity style={styles.applyButton} onPress={onClose}>
-            <Text style={styles.applyText}>Apply Filters</Text>
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+          <View style={styles.divider} />
+
+          {/* Buttons */}
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.resetButton} onPress={resetFilters}>
+              <Text style={styles.resetText}>Reset</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
+              <Text style={styles.applyText}>Apply Filters</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </View>
     </Modal>
   );
 };
@@ -86,63 +122,114 @@ const FilterModal = ({ visible, onClose }) => {
 export default FilterModal;
 
 const styles = StyleSheet.create({
-  modalBackground: {
+  overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 20,
   },
   modalContent: {
-    width: "80%",
+    width: "85%",
     backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
+    alignItems: "center",
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  closeIcon: {
+    position: "absolute",
+    top: 15,
+    right: 15,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.05)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalTitle: {
     fontSize: SIZES.large,
     fontWeight: "bold",
     marginBottom: 10,
+    color: COLORS.primary,
   },
-  searchInput: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 10,
+  divider: {
+    height: 1,
+    backgroundColor: "rgba(0,0,0,0.07)",
+    width: "100%",
+    marginVertical: 10,
   },
   sectionTitle: {
     fontSize: SIZES.medium,
     fontWeight: "bold",
     marginTop: 12,
+    alignSelf: "flex-start",
+    color: COLORS.grayDark || "#333",
   },
   row: {
     flexDirection: "row",
     flexWrap: "wrap",
+    justifyContent: "flex-start",
     marginTop: 6,
+    width: "100%",
   },
   option: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.lightGray,
-    padding: 8,
+    backgroundColor: "rgba(0,0,0,0.03)",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
-    margin: 4,
+    margin: 5,
+    minWidth: 70,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
   },
   selectedOption: {
     backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   optionText: {
-    marginLeft: 6,
-    color: COLORS.darkGray,
+    marginLeft: 4,
+    color: COLORS.grayDark || "#333",
+    fontWeight: "600",
+    fontSize: SIZES.small,
   },
   selectedOptionText: {
     color: COLORS.white,
   },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    marginTop: 15,
+    gap: 10,
+  },
+  resetButton: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.05)",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.1)",
+  },
+  resetText: {
+    color: COLORS.grayDark || "#333",
+    fontSize: SIZES.medium,
+    fontWeight: "bold",
+  },
   applyButton: {
-    marginTop: 16,
+    flex: 2,
     backgroundColor: COLORS.primary,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
   },
   applyText: {

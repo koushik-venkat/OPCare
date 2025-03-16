@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 
 const HeaderTop = () => {
   const router = useRouter();
-
+  
   return (
     <View style={styles.topRow}>
       {/* Left Section - Greeting & Location */}
@@ -14,31 +14,40 @@ const HeaderTop = () => {
           Hi, <Text style={styles.name}>Koushik</Text>
         </Text>
         <View style={styles.locationContainer}>
-          <FontAwesome name="map-marker" size={SIZES.small} color={COLORS.gray} />
+          <FontAwesome name="map-marker" size={12} color={COLORS.gray} />
           <Text style={styles.locationText}>Bangalore, India</Text>
         </View>
       </View>
-
+      
       {/* Right Section - Icons & Avatar */}
       <View style={styles.iconContainer}>
-        <TouchableOpacity style={styles.iconButton} onPress={() => router.push("/notifications")}>
-          <FontAwesome name="bell" size={SIZES.large} color={COLORS.gray} />
+        <TouchableOpacity 
+          style={styles.iconButton} 
+          onPress={() => router.push("/notifications")}
+        >
+          <FontAwesome name="bell-o" size={22} color={COLORS.grayDark} />
         </TouchableOpacity>
-
-        <TouchableOpacity style={styles.iconButton} onPress={() => router.push("/liked")}>
-          <FontAwesome name="heart" size={SIZES.large} color={COLORS.gray} />
+        
+        <TouchableOpacity 
+          style={styles.iconButton} 
+          onPress={() => router.push("/liked")}
+        >
+          <FontAwesome name="heart-o" size={22} color={COLORS.grayDark} />
         </TouchableOpacity>
-
-        <Image
-          source={{ uri: "https://randomuser.me/api/portraits/men/1.jpg" }}
-          style={styles.avatar}
-        />
+        
+        <TouchableOpacity onPress={() => router.push("/personalInformation")}>
+          <Image
+            source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }}
+            style={styles.avatar}
+          />
+        </TouchableOpacity>
       </View>
     </View>
   );
 };
 
 export default HeaderTop;
+
 
 const styles = StyleSheet.create({
   topRow: {

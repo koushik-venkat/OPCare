@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { View, StyleSheet, Text, Dimensions } from "react-native";
-import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+import { View, StyleSheet, Text, Dimensions, ScrollView, StatusBar } from "react-native";
 import AppointmentCard from "@/components/bookingsTab/appointmentCards";
-import RescheduleModal from "@/components/bookingsTab/rescheduleDialogue";
+import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+import AppointmentModal from "@/components/bookingsTab/AppointmentDialogue";
 import ConfirmDialog from "@/components/bookingsTab/confirmDialogue";
 import { COLORS, SIZES, SPACING, FONTS } from "@/config/tabContainer";
 
@@ -15,7 +15,7 @@ export const MOCK_APPOINTMENTS = [
     rating: 4.8,
     dateTime: "2025-03-05T14:00:00",
     status: "Upcoming",
-    image: "https://via.placeholder.com/100",
+    image: "https://randomuser.me/api/portraits/women/50.jpg",
   },
   {
     id: "2",
@@ -25,7 +25,7 @@ export const MOCK_APPOINTMENTS = [
     rating: 4.5,
     dateTime: "2025-03-06T10:00:00",
     status: "Upcoming",
-    image: "https://via.placeholder.com/100",
+    image: "https://randomuser.me/api/portraits/men/40.jpg",
   },
   {
     id: "3",
@@ -35,7 +35,7 @@ export const MOCK_APPOINTMENTS = [
     rating: 4.2,
     dateTime: "2025-02-28T16:30:00",
     status: "Completed",
-    image: "https://via.placeholder.com/100",
+    image: "https://randomuser.me/api/portraits/women/45.jpg",
   },
   {
     id: "4",
@@ -45,25 +45,30 @@ export const MOCK_APPOINTMENTS = [
     rating: 4.7,
     dateTime: "2025-02-25T09:00:00",
     status: "Canceled",
-    image: "https://via.placeholder.com/100",
+    image: "https://randomuser.me/api/portraits/men/35.jpg",
   },
 ];
 
 const renderAppointments = (appointments, extraProps = {}) => (
-  <View style={styles.scene}>
+  <ScrollView contentContainerStyle={styles.appointmentsContainer} showsVerticalScrollIndicator={false}>
     {appointments.length > 0 ? (
       appointments.map((appt) => (
-        <AppointmentCard key={appt.id} data={appt} {...extraProps} />
+        <View key={appt.id} style={styles.cardWrapper}>
+          <AppointmentCard data={appt} {...extraProps} />
+        </View>
       ))
     ) : (
-      <Text style={styles.emptyText}>No Appointments</Text>
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>No Appointments</Text>
+      </View>
     )}
-  </View>
+  </ScrollView>
 );
 
 const BookingsScreen = () => {
   const [appointments, setAppointments] = useState(MOCK_APPOINTMENTS);
   const [rescheduleData, setRescheduleData] = useState(null);
+  const [bookAgainData, setBookAgainData] = useState(null);
   const [confirmData, setConfirmData] = useState(null);
   const [index, setIndex] = useState(0);
 
@@ -77,78 +82,132 @@ const BookingsScreen = () => {
     upcoming: () =>
       renderAppointments(
         appointments.filter((appt) => appt.status === "Upcoming"),
-        { onCancel: setConfirmData, onReschedule: setRescheduleData }
+        {
+          onCancel: (apptId) => {
+            const fullAppt = appointments.find((a) => a.id === apptId);
+            if (fullAppt) {
+              setConfirmData(fullAppt);
+            }
+          },
+          onReschedule: (apptId) => {
+            const fullAppt = appointments.find((a) => a.id === apptId);
+            if (fullAppt) {
+              setRescheduleData(fullAppt);
+            }
+          },
+        }
       ),
-    completed: () =>
-      renderAppointments(
-        appointments.filter((appt) => appt.status === "Completed")
-      ),
-    canceled: () =>
-      renderAppointments(
-        appointments.filter((appt) => appt.status === "Canceled")
-      ),
+      completed: () => 
+        renderAppointments(
+          appointments.filter((appt) => appt.status === "Completed"),
+          {
+            onBookAgain: (apptData) => {
+              setBookAgainData(apptData);
+            },
+          }
+        ),
+      canceled: () => 
+        renderAppointments(
+          appointments.filter((appt) => appt.status === "Canceled"),
+          {
+            onBookAgain: (apptData) => {
+
+              setBookAgainData(apptData);
+            },
+          }
+        ),
   });
+
+  // Function to generate a new appointment ID
+  const generateNewAppointmentId = () => {
+    return `${Math.max(...appointments.map(a => parseInt(a.id))) + 1}`;
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Your Bookings</Text>
-
-      <TabView
-        navigationState={{ index, routes }}
-        renderScene={renderScene}
-        onIndexChange={setIndex}
-        initialLayout={{ width: Dimensions.get("window").width }}
-        renderTabBar={(props) => (
-          <TabBar
-            {...props}
-            indicatorStyle={{ backgroundColor: COLORS.primary }}
-            style={{ 
-              backgroundColor: COLORS.backgroundLight, 
-              elevation: 0 
-            }}
-            activeColor={COLORS.primaryDark} // Explicitly set active color
-            inactiveColor={COLORS.grayDark} // Explicitly set inactive color
-            renderLabel={({ route, focused }) => (
-              <Text style={[
-                styles.tabText, 
-                { 
-                  color: focused ? COLORS.primaryDark : COLORS.grayDark 
-                }
-              ]}>
-                {route.title}
-              </Text>
-            )}
-          />
-        )}
-      />
-
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.backgroundLight} />
+      <View style={styles.headerContainer}>
+        <Text style={styles.heading}>Bookings</Text>
+      </View>
+      <View style={styles.contentContainer}>
+        <TabView
+          navigationState={{ index, routes }}
+          renderScene={renderScene}
+          onIndexChange={setIndex}
+          initialLayout={{ width: Dimensions.get("window").width }}
+          renderTabBar={(props) => (
+            <TabBar
+              {...props}
+              indicatorStyle={styles.tabIndicator}
+              style={styles.tabBar}
+              activeColor={COLORS.primary}
+              inactiveColor={COLORS.grayDark}
+              scrollEnabled={true}
+              tabStyle={styles.tab}
+              renderLabel={({ route, focused }) => (
+                <Text style={[styles.tabText, { color: focused ? COLORS.primary : COLORS.grayDark }]}>
+                  {route.title}
+                </Text>
+              )}
+            />
+          )}
+        />
+      </View>
+      
       {rescheduleData && (
-        <RescheduleModal
-          appointmentId={rescheduleData}
+        <AppointmentModal
+          appointmentId={rescheduleData.id}
+          type="reschedule"
           onClose={() => setRescheduleData(null)}
-          onConfirm={(id, date) =>
+          onCancel={() => setRescheduleData(null)}
+          onConfirm={(id, date) => {
             setAppointments((prev) =>
               prev.map((appt) =>
-                appt.id === id
-                  ? { ...appt, dateTime: date, status: "Upcoming" }
-                  : appt
+                appt.id === id ? { ...appt, dateTime: date, status: "Upcoming" } : appt
               )
-            )
-          }
+            );
+            setRescheduleData(null);
+          }}
+          appointmentDetails={rescheduleData}
         />
       )}
-
+      
+      {bookAgainData && (
+        <AppointmentModal
+        appointmentId={bookAgainData.id}
+          type="booking"
+          onClose={() => setBookAgainData(null)}
+          onCancel={() => setBookAgainData(null)}
+          onConfirm={(_, date) => {
+            const newId = generateNewAppointmentId();
+            setAppointments((prev) => [
+              ...prev,
+              {
+                ...bookAgainData,
+                id: newId,
+                dateTime: date,
+                status: "Upcoming",
+              }
+            ]);
+            setBookAgainData(null);
+          }}
+          appointmentDetails={bookAgainData}
+        />
+      )}
+      
       {confirmData && (
         <ConfirmDialog
           visible={!!confirmData}
           onCancel={() => setConfirmData(null)}
-          onConfirm={() =>
+          onConfirm={() => {
             setAppointments((prev) =>
               prev.map((appt) =>
-                appt.id === confirmData ? { ...appt, status: "Canceled" } : appt
+                appt.id === confirmData.id ? { ...appt, status: "Canceled" } : appt
               )
-            )
-          }
+            );
+            setConfirmData(null);
+          }}
+          appointmentDetails={confirmData}
         />
       )}
     </View>
@@ -161,27 +220,56 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundLight,
-    padding: SIZES.paddingMedium,
+  },
+  headerContainer: {
+    backgroundColor: "white",
+    paddingVertical: SPACING.medium,
+    paddingHorizontal: SIZES.paddingMedium,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.05)",
   },
   heading: {
     fontSize: SIZES.xLarge,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: SPACING.medium,
+    fontWeight: "600",
+    textAlign: "left",
     color: COLORS.primary,
   },
-  scene: {
+  contentContainer: {
     flex: 1,
-    padding: SPACING.medium,
+    backgroundColor: COLORS.backgroundLight,
+  },
+  tabBar: {
+    backgroundColor: "white",
+    elevation: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.05)",
+  },
+  tabIndicator: {
+    backgroundColor: COLORS.primary,
+    height: 3,
+    borderRadius: 3,
+  },
+  tab: {
+    width: "auto",
+    paddingHorizontal: 16,
   },
   tabText: {
     fontSize: SIZES.medium,
-    fontWeight: "bold",
+  },
+  appointmentsContainer: {
+    padding: SPACING.medium,
+    paddingBottom: SPACING.xLarge,
+  },
+  emptyContainer: {
+    padding: SPACING.large,
+    alignItems: "center",
+    justifyContent: "center",
   },
   emptyText: {
-    textAlign: "center",
-    marginTop: SIZES.large,
-    color: COLORS.grayDark,
     fontSize: SIZES.medium,
+    color: COLORS.grayDark,
+  },
+  cardWrapper: {
+    marginBottom: SPACING.medium,
   },
 });
